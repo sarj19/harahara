@@ -1,0 +1,33 @@
+# Example macros — multi-step command sequences.
+# Run with /macro <name>. List with /macros.
+#
+# Format:
+#   macro_name:
+#     desc: "Description"
+#     continue_on_error: false    # optional, default false (stop on first failure)
+#     steps:
+#       - cmd: "shell command"    # or "/bot_command" for bot commands
+#         desc: "Step description"
+#         timeout: 300            # optional, default 300s
+#
+# Examples:
+
+# morning:
+#   desc: "Morning routine check"
+#   steps:
+#     - cmd: "pmset -g batt | grep -Eo '\\d+%'"
+#       desc: "Battery level"
+#     - cmd: "df -h / | awk 'NR==2{print $5}'"
+#       desc: "Disk usage"
+#     - cmd: "uptime"
+#       desc: "Uptime"
+
+# deploy:
+#   desc: "Deploy my app"
+#   continue_on_error: false
+#   steps:
+#     - cmd: "cd /path/to/app && git pull"
+#       desc: "Pull latest"
+#     - cmd: "cd /path/to/app && npm run build"
+#       desc: "Build"
+#       timeout: 120

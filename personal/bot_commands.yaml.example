@@ -1,0 +1,21 @@
+# ─── Personal Commands ───
+# This file is gitignored. Copy bot_commands.yaml.example to bot_commands.yaml and add your own.
+# Commands here merge with (and can override) bot_commands.yaml.
+# Format is identical to bot_commands.yaml.
+
+# Example: add a calendar command
+# cal:
+#   cmd: "cal -h"
+#   desc: "Show calendar for current month"
+
+# Example: run a custom script
+# deploy:
+#   cmd: "/path/to/your/deploy.sh"
+#   desc: "Deploy my app"
+#   timeout: 600
+
+# Example: override a built-in command
+# gemini:
+#   cmd: "/usr/local/bin/gemini --yolo --output-format text"
+#   desc: "Run Gemini CLI (custom path)"
+#   timeout: 600

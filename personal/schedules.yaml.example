@@ -1,0 +1,27 @@
+# Example scheduled commands — put your own schedules here.
+# The bot checks every 60 seconds and runs commands on their interval.
+# Dangerous commands (restart, shutdown, trash) are automatically skipped.
+#
+# Format:
+#   schedule_name:
+#     cmd: "shell command"         # or "/bot_command" to run a bot command
+#     interval: "2h"               # duration: 30m, 2h, 12h, etc.
+#     desc: "Description"          # shown in output messages
+#     timeout: 300                 # optional, default 300s
+#
+# Examples:
+
+# battery_check:
+#   cmd: "pmset -g batt | grep -Eo '\\d+%'"
+#   interval: "2h"
+#   desc: "Battery level"
+
+# disk_usage:
+#   cmd: "df -h / | awk 'NR==2{printf \"Disk: %s used of %s (%s)\\n\", $3, $2, $5}'"
+#   interval: "6h"
+#   desc: "Disk usage report"
+
+# uptime_check:
+#   cmd: "uptime"
+#   interval: "4h"
+#   desc: "System uptime"

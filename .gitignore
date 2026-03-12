@@ -1,0 +1,29 @@
+# Secrets & personal config
+.env
+.env.bak
+
+# Personal files (only *.example templates are checked in)
+personal/*
+!personal/*.example
+
+# Logs (runtime output)
+logs/*
+!logs/.gitkeep
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# macOS
+.DS_Store
+*.swp
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+/tmp/

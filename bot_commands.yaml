@@ -1,0 +1,284 @@
+# ══════════════════════════════════════════════════════════════════
+# ⚠️  SHARED COMMANDS — checked into git, ships with the repo.
+#
+#     DO NOT add personal commands here!
+#
+#     Personal commands go in:  personal/bot_commands.yaml
+#     Use /build to create new commands, schedules, and macros
+#     interactively — no need to edit YAML by hand.
+#
+# ══════════════════════════════════════════════════════════════════
+
+# ─── Special Commands (Python handlers) ───
+# Metadata only — the actual handlers live in botpkg/handlers/*.py.
+# Descriptions, aliases, and follow-ups are loaded from here at startup.
+_special:
+  help:
+    desc: "Show this help message"
+  status:
+    desc: "Bot status: uptime, heartbeat config"
+  screenshot:
+    desc: "Capture screenshot: /screenshot [count] or /screenshot stop"
+    aliases: [ss, snap, sc]
+    followups:
+      - { label: "📸 Another", cmd: "/screenshot" }
+      - { label: "🔍 Diff", cmd: "/diff" }
+      - { label: "📹 Record", cmd: "/record" }
+  webcam:
+    desc: "Webcam photo: /webcam [count]"
+    followups:
+      - { label: "📷 Another", cmd: "/webcam" }
+      - { label: "📹 Record", cmd: "/webcamrecord" }
+  key:
+    desc: "Send keys: /key cmd l, /key enter, /key alt shift 3"
+    aliases: [k]
+  type:
+    desc: "Type text: /type <text>"
+  url:
+    desc: "Open URL in browser: /url <url>"
+  logs:
+    desc: "Show bot logs: /logs [lines]"
+  kill:
+    desc: "Kill process: /kill <name>"
+  restartbot:
+    desc: "Restart the bot process"
+  remind:
+    desc: "Set reminder: /remind <duration> <message> (e.g. 5m, 2h, 90s)"
+    aliases: [r]
+  open:
+    desc: "Open an app: /open <app_name>"
+  quit:
+    desc: "Quit an app: /quit <app_name>"
+  say:
+    desc: "Speak text aloud: /say <text>"
+  voices:
+    desc: "List available macOS voices"
+    aliases: [v]
+  keyboard:
+    desc: "Show quick reply keyboard"
+    aliases: [kb]
+  download:
+    desc: "Send file from Mac: /download <path>"
+    aliases: [dl]
+  upload:
+    desc: "Save next file sent to: /upload [path]"
+    aliases: [ul]
+  notifications:
+    desc: "Recent macOS notifications: /notifications [count]"
+    aliases: [notifs]
+  note:
+    desc: "Notes: /note save|list|search|delete <text|id>"
+    aliases: [n]
+    followups:
+      - { label: "📝 List", cmd: "/note list" }
+      - { label: "🔍 Search", cmd: "/note search " }
+  record:
+    desc: "Record screen: /record <duration> (e.g. 10s, 1m)"
+    aliases: [rec]
+    followups:
+      - { label: "📸 Screenshot", cmd: "/screenshot" }
+      - { label: "🔍 Diff", cmd: "/diff" }
+  audio:
+    desc: "Record audio: /audio <duration> (e.g. 10s, 1m)"
+    aliases: [mic]
+  webcamrecord:
+    desc: "Record webcam video: /webcamrecord <duration> (e.g. 10s, 1m)"
+    aliases: [wcr]
+  macro:
+    desc: "Run a macro: /macro <name>"
+  macros:
+    desc: "List available macros"
+  brain:
+    desc: "NLP brain: /brain status|clear"
+  calendar:
+    desc: "Calendar: /calendar [today|tomorrow|week|add <text>]"
+    aliases: [cal, today]
+    followups:
+      - { label: "✉️ Mail", cmd: "/mail" }
+      - { label: "📝 Note", cmd: "/note save " }
+  mail:
+    desc: "Email: /mail [count|search <q>|read <id>|send <to> <msg>]"
+    aliases: [email, gmail]
+    followups:
+      - { label: "📅 Calendar", cmd: "/calendar" }
+      - { label: "📝 Note", cmd: "/note save " }
+  googlesetup:
+    desc: "Set up Google Calendar & Gmail API"
+  last:
+    desc: "Show recent commands: /last [count]"
+    aliases: [l, history]
+  diff:
+    desc: "Screenshot comparison: highlights what changed since last /diff"
+    aliases: [compare, changed]
+    followups:
+      - { label: "📸 Screenshot", cmd: "/screenshot" }
+  where:
+    desc: "Network context: public IP, WiFi, geolocation, signal"
+    aliases: [network, ip, wifi]
+    followups:
+      - { label: "📊 Status", cmd: "/status" }
+      - { label: "📸 Screenshot", cmd: "/screenshot" }
+  timer:
+    desc: "Countdown timer: /timer <duration> [label]"
+    aliases: [countdown]
+    followups:
+      - { label: "🍅 Pomodoro", cmd: "/pomodoro" }
+      - { label: "🎯 Focus", cmd: "/focus 25m" }
+  pomodoro:
+    desc: "Pomodoro timer: 25m work → 5m break"
+    aliases: [pomo]
+    followups:
+      - { label: "🎯 Focus", cmd: "/focus 25m" }
+      - { label: "⏱ Timer", cmd: "/timer 25m" }
+  snippet:
+    desc: "Clipboard history: /snippet [N|search|clear]"
+    aliases: [clip, cb, clipboard]
+  build:
+    desc: "Build new command interactively: /build [name cmd]"
+    aliases: [new, create, addcmd]
+  start:
+    desc: "Onboarding tour with tappable examples"
+    aliases: [onboard, tour, welcome]
+  menu:
+    desc: "Quick-access category keyboards: /menu [category]"
+    aliases: [categories, commands]
+  focus:
+    desc: "Focus mode: timer + DND: /focus <duration> [label]"
+    aliases: [dnd, deepwork]
+  pin:
+    desc: "Bookmark a message: reply with /pin or /pin <text>"
+    aliases: [bookmark, save]
+  pins:
+    desc: "List pinned messages: /pins [clear]"
+    aliases: [bookmarks, saved]
+  streak:
+    desc: "Your usage streak and stats"
+    aliases: [stats, gamify]
+  fav:
+    desc: "Favorites bar: /fav add|remove|list|show"
+  settings:
+    desc: "Interactive settings wizard"
+  shortcut:
+    desc: "Run macOS Shortcut: /shortcut [name]"
+    aliases: [shortcuts]
+    followups:
+      - { label: "📎 List", cmd: "/shortcut list" }
+  schedule:
+    desc: "Manage schedules: /schedule [list|add|remove]"
+    aliases: [sched, schedules]
+    followups:
+      - { label: "📎 List", cmd: "/schedule list" }
+      - { label: "🔨 Build", cmd: "/build" }
+  ollamasetup:
+    desc: "Set up local AI with Ollama"
+  ai:
+    desc: "AI query: /ai <question> (uses configured backend)"
+    aliases: [ask, llm, ollama]
+    followups:
+      - { label: "🤖 Setup", cmd: "/ollamasetup" }
+      - { label: "🧠 Brain", cmd: "/brain status" }
+
+
+# ─── System Control ───
+ping:
+  cmd: "echo '🖥 System Status' && uptime && echo '' && top -l 1 -n 0 | grep -E '^(CPU|Phys)' && echo '' && df -h / | awk 'NR==2{printf \"Disk: %s used of %s (%s)\\n\", $3, $2, $5}' && echo '' && echo \"IP: $(ipconfig getifaddr en0 2>/dev/null || echo 'N/A')\" && echo \"Battery: $(pmset -g batt | grep -Eo '\\d+%' | head -1 || echo 'N/A')\""
+  desc: System status (uptime, CPU, memory, disk, IP, battery)
+  aliases: [p, sysinfo]
+  followups:
+    - { label: "📸 Screenshot", cmd: "/screenshot" }
+    - { label: "📊 Dashboard", cmd: "/status" }
+
+uptime:
+  cmd: "uptime"
+  desc: Show system uptime
+
+pid:
+  cmd: "ps -p {} -o pid,ppid,stat,%cpu,%mem,etime,command"
+  desc: "Show process status by PID: /pid <pid>"
+
+lock:
+  cmd: "pmset displaysleepnow"
+  desc: Put the display to sleep
+  followups:
+    - { label: "🔓 Wake", cmd: "/wake" }
+
+wake:
+  cmd: "caffeinate -u -t 1"
+  desc: Wake the display
+
+stayawake:
+  cmd: "caffeinate -di & echo $! > /tmp/harahara_bot_caffeinate.pid && echo \"Computer will stay awake (PID: $(cat /tmp/harahara_bot_caffeinate.pid)). Use /stopawake to stop.\""
+  desc: Keep the Mac awake indefinitely
+
+stopawake:
+  cmd: "if [ -f /tmp/harahara_bot_caffeinate.pid ]; then kill $(cat /tmp/harahara_bot_caffeinate.pid) 2>/dev/null && rm /tmp/harahara_bot_caffeinate.pid && echo 'Stopped.'; else killall caffeinate 2>/dev/null && echo 'Stopped (killall).'; fi || echo 'No active caffeinate process.'"
+  desc: Stop keeping the Mac awake
+
+restart:
+  cmd: "osascript -e 'tell app \"System Events\" to restart'"
+  desc: "⚠️ Restart the computer (requires confirmation)"
+
+shutdown:
+  cmd: "osascript -e 'tell app \"System Events\" to shut down'"
+  desc: "⚠️ Shut down the computer (requires confirmation)"
+
+procs:
+  cmd: "bash -c 'N=${1:-10}; ps aux -r | head -$((N+1))' --"
+  desc: "Top processes by CPU: /procs [count] (default 10)"
+
+# ─── Clipboard ───
+clipboard:
+  cmd: "pbpaste"
+  desc: Show clipboard contents
+
+setclipboard:
+  cmd: "printf '%s' {} | pbcopy"
+  desc: "Set clipboard text: /setclipboard <text>"
+
+# ─── Volume & Audio ───
+volume:
+  cmd: "osascript -e 'output volume of (get volume settings)'"
+  desc: Get current volume (0-100)
+  aliases: [vol]
+
+setvolume:
+  cmd: "osascript -e 'set volume output volume {}'"
+  desc: "Set volume: /setvolume <0-100>"
+  aliases: [sv]
+
+mute:
+  cmd: "osascript -e 'set volume output muted true' && echo '🔇 Muted.'"
+  desc: Mute audio
+
+unmute:
+  cmd: "osascript -e 'set volume output muted false' && echo '🔊 Unmuted.'"
+  desc: Unmute audio
+
+# ─── Notifications ───
+notify:
+  cmd: "osascript -e 'display notification \"{}\" with title \"harahara Bot\"' && echo 'Notification sent.'"
+  desc: "Show a macOS notification: /notify <message>"
+
+# ─── Network ───
+publicip:
+  cmd: "curl -s ifconfig.me"
+  desc: Show public IP address
+
+# ─── Cleanup ───
+trash:
+  cmd: "osascript -e 'tell app \"Finder\" to empty trash' && echo 'Trash emptied.'"
+  desc: "⚠️ Empty the Trash (requires confirmation)"
+
+tempclean:
+  cmd: "rm -rf /tmp/harahara_bot_* && echo 'Temp files cleaned.'"
+  desc: Clean bot temp files
+
+# ─── Dev & Automation ───
+gemini:
+  cmd: "NODE_NO_WARNINGS=1 gemini --yolo --output-format text 'Be concise. {}'"
+  desc: "Run Gemini CLI: /gemini <query>"
+  timeout: 300
+
+cron:
+  cmd: "crontab -l 2>/dev/null || echo 'No crontab set.'"
+  desc: Show cron jobs
