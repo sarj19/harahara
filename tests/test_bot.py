@@ -567,33 +567,31 @@ class TestHandlerLogic(unittest.TestCase):
         self.assertIn("Usage", reply_text)
 
     @patch("botpkg.handlers.usability.bot")
-    @patch("botpkg.handlers.commands.run_command_streaming", return_value=("output here", 0))
+    @patch("botpkg.handlers.commands.subprocess.run")
     @patch("botpkg.handlers.commands.bot")
     @patch("botpkg.handlers.bot")
-    def test_yaml_command_inline_timeout(self, mock_bot, mock_cmd_bot, mock_runner, mock_usability_bot):
+    def test_yaml_command_inline_timeout(self, mock_bot, mock_cmd_bot, mock_subproc_run, mock_usability_bot):
         from botpkg.handlers import handle_all_messages
+        mock_subproc_run.return_value = MagicMock(stdout="hi", stderr="", returncode=0)
         fake_commands = {"gemini": {"cmd": "echo hi", "desc": "Gemini", "timeout": 300}}
         with patch("botpkg.handlers.commands.load_commands", return_value=fake_commands):
             msg = self._make_message("/gemini -t 30m what is 1+1")
             handle_all_messages(msg)
-            import time as _t
-            _t.sleep(0.2)  # Let the thread start
-            call_args = mock_runner.call_args
-            self.assertEqual(call_args[0][2], 1800)  # timeout arg
+            call_kwargs = mock_subproc_run.call_args[1]
+            self.assertEqual(call_kwargs["timeout"], 1800)  # timeout arg
 
     @patch("botpkg.handlers.usability.bot")
-    @patch("botpkg.handlers.commands.run_command_streaming", return_value=("vol set", 0))
+    @patch("botpkg.handlers.commands.subprocess.run")
     @patch("botpkg.handlers.commands.bot")
     @patch("botpkg.handlers.bot")
-    def test_yaml_command_placeholder_escaping(self, mock_bot, mock_cmd_bot, mock_runner, mock_usability_bot):
+    def test_yaml_command_placeholder_escaping(self, mock_bot, mock_cmd_bot, mock_subproc_run, mock_usability_bot):
         from botpkg.handlers import handle_all_messages
+        mock_subproc_run.return_value = MagicMock(stdout="vol set", stderr="", returncode=0)
         fake_commands = {"setvolume": {"cmd": "osascript -e 'set volume output volume {}'", "desc": "Vol"}}
         with patch("botpkg.handlers.commands.load_commands", return_value=fake_commands):
             msg = self._make_message("/setvolume 80")
             handle_all_messages(msg)
-            import time as _t
-            _t.sleep(0.2)
-            shell_cmd = mock_runner.call_args[0][1]
+            shell_cmd = mock_subproc_run.call_args[0][0]
             self.assertIn("80", shell_cmd)
             self.assertNotIn("{}", shell_cmd)
 

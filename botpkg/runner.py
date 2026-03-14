@@ -83,10 +83,10 @@ def _truncated_output(lines, max_lines=MAX_VISIBLE_LINES):
     return text, True, total
 
 
-def run_command_streaming(chat_id, shell_command, timeout, command_name=""):
+def run_command_streaming(chat_id, shell_command, timeout, command_name="", reply_to_message_id=None):
     """Run a shell command with live output streaming via Telegram message edits.
 
-    Sends an initial '⏳ Running...' message, then edits it every 2s with
+    Sends an initial '⏳ Running...' message, then edits it every 10s with
     accumulated stdout. On completion, sends final output with exit code.
     Truncates to MAX_VISIBLE_LINES and offers full output as document.
 
@@ -100,8 +100,8 @@ def run_command_streaming(chat_id, shell_command, timeout, command_name=""):
         chat_id,
         f"⏳ Running `{cmd_label}`...",
         parse_mode="Markdown",
+        reply_to_message_id=reply_to_message_id
     )
-    msg_id = status_msg.message_id
 
     proc = subprocess.Popen(
         shell_command, shell=True,
@@ -124,8 +124,8 @@ def run_command_streaming(chat_id, shell_command, timeout, command_name=""):
     reader.start()
 
     def updater_thread():
-        """Edit the message every 4s with latest output + elapsed time."""
-        while not stop_event.wait(4):
+        """Edit the message every 10s with latest output + elapsed time."""
+        while not stop_event.wait(10):
             if not lines:
                 # Show elapsed even with no output yet
                 elapsed = _format_elapsed(time.time() - start_time)

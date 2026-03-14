@@ -28,7 +28,7 @@ def _parse_count(message, text, usage_msg):
     return None, args
 
 
-def _multi_capture(chat_id, count, capture_fn, emoji, label, cancellable=False):
+def _multi_capture(chat_id, count, capture_fn, emoji, label, cancellable=False, status_msg=None):
     """Run capture_fn(chat_id, index) up to `count` times, 1 min apart.
 
     If cancellable=True, registers a cancel event in screenshot_sessions.
@@ -38,6 +38,7 @@ def _multi_capture(chat_id, count, capture_fn, emoji, label, cancellable=False):
         screenshot_sessions[chat_id] = cancel_event
 
     def loop():
+        current_status = status_msg
         try:
             for i in range(count):
                 if cancel_event and cancel_event.is_set():
@@ -49,8 +50,8 @@ def _multi_capture(chat_id, count, capture_fn, emoji, label, cancellable=False):
                             bot.send_message(chat_id, f"🛑 {label} session stopped at {i}/{count}.")
                             return
                         time.sleep(1)
-                    bot.send_message(chat_id, f"{emoji} Capturing {label.lower()} {i + 1}/{count}...")
-                capture_fn(chat_id, i, count)
+                    current_status = bot.send_message(chat_id, f"{emoji} Capturing {label.lower()} {i + 1}/{count}...")
+                capture_fn(chat_id, i, count, current_status)
             if count > 1:
                 bot.send_message(chat_id, f"✅ All {count} {label.lower()}s done.")
         finally:
@@ -83,15 +84,15 @@ def handle_screenshot(message, chat_id, text):
         return
 
     if count == 1:
-        bot.reply_to(message, "📸 Capturing screenshot...")
+        status_msg = None
     else:
-        bot.reply_to(message, f"📸 Capturing {count} screenshots (1 min apart)...")
+        status_msg = bot.reply_to(message, f"📸 Capturing {count} screenshots (1 min apart)...")
 
-    def capture_one(cid, i, total):
-        take_and_send_screenshot(cid)
+    def capture_one(cid, i, total, smsg=None):
+        take_and_send_screenshot(cid, delete_message_id=smsg.message_id if smsg else None, reply_to_message_id=message.message_id if i == 0 else None)
         logger.info(f"Screenshot {i + 1}/{total} sent successfully.")
 
-    _multi_capture(chat_id, count, capture_one, "📸", "Screenshot", cancellable=True)
+    _multi_capture(chat_id, count, capture_one, "📸", "Screenshot", cancellable=True, status_msg=status_msg)
 
 
 def handle_webcam(message, chat_id, text):
@@ -100,11 +101,11 @@ def handle_webcam(message, chat_id, text):
         return
 
     if count == 1:
-        bot.reply_to(message, "📷 Capturing webcam photo...")
+        status_msg = None
     else:
-        bot.reply_to(message, f"📷 Capturing {count} webcam photos (1 min apart)...")
+        status_msg = bot.reply_to(message, f"📷 Capturing {count} webcam photos (1 min apart)...")
 
-    def capture_one(cid, i, total):
+    def capture_one(cid, i, total, smsg=None):
         webcam_path = f"/tmp/harahara_bot_webcam_{i}.jpg"
         try:
             subprocess.run(
@@ -112,7 +113,7 @@ def handle_webcam(message, chat_id, text):
                 check=True, capture_output=True, text=True,
             )
             if os.path.exists(webcam_path):
-                send_file_smart(cid, webcam_path, caption=f"{i + 1}/{total}" if total > 1 else None)
+                send_file_smart(cid, webcam_path, caption=f"{i + 1}/{total}" if total > 1 else None, delete_message_id=smsg.message_id if smsg else None, reply_to_message_id=message.message_id if i == 0 else None)
                 os.remove(webcam_path)
                 logger.info(f"Webcam {i + 1}/{total} sent successfully.")
             else:
@@ -121,7 +122,7 @@ def handle_webcam(message, chat_id, text):
             bot.send_message(cid, f"❌ Webcam {i + 1}/{total} error: {e}")
             logger.error(f"Webcam {i + 1}/{total} error: {e}")
 
-    _multi_capture(chat_id, count, capture_one, "📷", "Webcam photo")
+    _multi_capture(chat_id, count, capture_one, "📷", "Webcam photo", status_msg=status_msg)
 
 
 def handle_type(message, chat_id, text):
@@ -277,9 +278,9 @@ def handle_key(message, chat_id, text):
 
     try:
         subprocess.run(["osascript", "-e", script], check=True, capture_output=True, text=True)
-        bot.reply_to(message, f"⌨️ Sent: `{args}`", parse_mode="Markdown")
+        status_msg = bot.reply_to(message, f"⌨️ Sent: `{args}`", parse_mode="Markdown")
         logger.info(f"Key command sent: {args} → {script}")
-        take_and_send_screenshot(chat_id)
+        take_and_send_screenshot(chat_id, delete_message_id=status_msg.message_id if "status_msg" in locals() else None)
     except Exception as e:
         bot.send_message(chat_id, f"❌ Key error: {e}")
         logger.error(f"Key command error: {e}")
@@ -290,11 +291,11 @@ def handle_open(message, chat_id, text):
     if not args:
         bot.reply_to(message, "Usage: `/open <app_name>`", parse_mode="Markdown")
         return
-    bot.reply_to(message, f"📂 Opening {args}...")
+    status_msg = bot.reply_to(message, f"📂 Opening {args}...")
     try:
         subprocess.run(["open", "-a", args], check=True, capture_output=True, text=True)
         time.sleep(2)
-        take_and_send_screenshot(chat_id)
+        take_and_send_screenshot(chat_id, delete_message_id=status_msg.message_id if "status_msg" in locals() else None)
     except Exception as e:
         bot.send_message(chat_id, f"❌ Open error: {e}")
         logger.error(f"Open error: {e}")
@@ -305,13 +306,13 @@ def handle_quit(message, chat_id, text):
     if not args:
         bot.reply_to(message, "Usage: `/quit <app_name>`", parse_mode="Markdown")
         return
-    bot.reply_to(message, f"❌ Quitting {args}...")
+    status_msg = bot.reply_to(message, f"❌ Quitting {args}...")
     try:
         escaped_args = args.replace('"', '\\"')
         script = f'tell application "{escaped_args}" to quit'
         subprocess.run(["osascript", "-e", script], check=True, capture_output=True, text=True)
         time.sleep(2)
-        take_and_send_screenshot(chat_id)
+        take_and_send_screenshot(chat_id, delete_message_id=status_msg.message_id if "status_msg" in locals() else None)
     except Exception as e:
         bot.send_message(chat_id, f"❌ Quit error: {e}")
         logger.error(f"Quit error: {e}")
@@ -337,7 +338,7 @@ _DIFF_OUT_PATH = "/tmp/harahara_bot_diff_out.png"
 
 def handle_diff(message, chat_id, text):
     """Take a screenshot and compare with the previous one, highlighting changes."""
-    bot.reply_to(message, "📸 Capturing screenshot for comparison...")
+    status_msg = bot.reply_to(message, "📸 Capturing screenshot for comparison...")
 
     # Take current screenshot
     try:
@@ -353,7 +354,7 @@ def handle_diff(message, chat_id, text):
         # First run — save as baseline
         import shutil
         shutil.copy2(_DIFF_CURR_PATH, _DIFF_PREV_PATH)
-        send_file_smart(chat_id, _DIFF_CURR_PATH, caption="📸 First snapshot saved as baseline. Run /diff again to compare.")
+        send_file_smart(chat_id, _DIFF_CURR_PATH, caption="📸 First snapshot saved as baseline. Run /diff again to compare.", delete_message_id=status_msg.message_id)
         return
 
     try:
@@ -417,7 +418,7 @@ def handle_diff(message, chat_id, text):
 
 def handle_where(message, chat_id, text):
     """Show network context: public IP, WiFi, geo, local IP."""
-    bot.reply_to(message, "🗺 Gathering network info...")
+    status_msg = bot.reply_to(message, "🗺 Gathering network info...")
 
     info_lines = ["🗺 *Network Context*\n"]
 
@@ -498,5 +499,5 @@ def handle_where(message, chat_id, text):
     except Exception:
         pass
 
-    bot.send_message(chat_id, "\n".join(info_lines), parse_mode="Markdown", disable_web_page_preview=True)
+    bot.edit_message_text("\n".join(info_lines), chat_id=chat_id, message_id=status_msg.message_id, parse_mode="Markdown", disable_web_page_preview=True)
 

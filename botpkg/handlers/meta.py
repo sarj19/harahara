@@ -276,7 +276,10 @@ def handle_snippet(message, chat_id, text):
             truncated = "..." if entry["full_length"] > 60 else ""
             lines.append(f"  `{i}.` `{ts}` {text_preview}{truncated}")
         lines.append("\n_Use_ `/snippet N` _to retrieve full entry_")
-        bot.send_message(chat_id, "\n".join(lines), parse_mode="Markdown")
+        try:
+            bot.send_message(chat_id, "\n".join(lines), parse_mode="Markdown")
+        except Exception:
+            bot.send_message(chat_id, "\n".join(lines))
         return
 
     if args.lower() == "clear":
@@ -289,11 +292,14 @@ def handle_snippet(message, chat_id, text):
         entry = get_entry(index)
         if entry:
             ts = datetime.fromtimestamp(entry["time"]).strftime("%H:%M:%S")
-            bot.send_message(
-                chat_id,
-                f"📋 *Clip #{index}* (`{ts}`):\n```\n{entry['text']}\n```",
-                parse_mode="Markdown",
-            )
+            try:
+                bot.send_message(
+                    chat_id,
+                    f"📋 *Clip #{index}* (`{ts}`):\n```\n{entry['text']}\n```",
+                    parse_mode="Markdown",
+                )
+            except Exception:
+                bot.send_message(chat_id, f"📋 Clip #{index} ({ts}):\n\n{entry['text']}")
         else:
             bot.reply_to(message, f"❌ No entry #{index}.")
         return
@@ -312,7 +318,10 @@ def handle_snippet(message, chat_id, text):
             ts = datetime.fromtimestamp(entry["time"]).strftime("%H:%M:%S")
             preview = entry["text"][:60].replace("\n", "↵")
             lines.append(f"  `{ts}` {preview}")
-        bot.send_message(chat_id, "\n".join(lines), parse_mode="Markdown")
+        try:
+            bot.send_message(chat_id, "\n".join(lines), parse_mode="Markdown")
+        except Exception:
+            bot.send_message(chat_id, "\n".join(lines))
         return
 
     bot.reply_to(

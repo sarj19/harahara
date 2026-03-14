@@ -144,7 +144,7 @@ def handle_ai(message, chat_id, text):
         )
         return
 
-    bot.reply_to(message, "🧠 Thinking...")
+    status_msg = bot.reply_to(message, "🧠 Thinking...")
 
     def do_query():
         from botpkg.brain import _call_ai
@@ -165,7 +165,7 @@ def handle_ai(message, chat_id, text):
 
         response, backend = result
         if response is None:
-            bot.send_message(chat_id, "❌ AI query failed. Check that your backend is running.")
+            bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text="❌ AI query failed. Check that your backend is running.")
             return
 
         add_to_history(chat_id, "assistant", response[:500])
@@ -174,6 +174,6 @@ def handle_ai(message, chat_id, text):
             response = response[:4000] + "\n...[truncated]"
 
         footer = f"\n\n_via {backend}_" if backend else ""
-        bot.send_message(chat_id, f"{response}{footer}", parse_mode="Markdown")
+        bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text=f"{response}{footer}", parse_mode="Markdown")
 
     threading.Thread(target=do_query, daemon=True).start()

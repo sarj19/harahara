@@ -80,26 +80,43 @@ def handle_yaml_command(message, chat_id, text):
     section_emoji = CATEGORY_EMOJIS.get(section, "") if section else ""
     prefix = f"{section_emoji} " if section_emoji else ""
 
-    bot.reply_to(message, f"{prefix}Executing: {shell_command}")
-    logger.info(f"Executing command: {shell_command}")
-
     cmd_timeout = inline_timeout or (entry.get("timeout", 300) if isinstance(entry, dict) else 300)
 
-    def execute():
+    # Fast path: run synchronously for short commands, reply directly
+    try:
+        result = subprocess.run(
+            shell_command, shell=True,
+            capture_output=True, text=True, timeout=cmd_timeout,
+        )
+        output = (result.stdout + result.stderr).strip() or "(No output)"
+        returncode = result.returncode
+
+        # Record in command history
+        from botpkg.handlers.meta import record_command
+        record_command(command_name, chat_id, returncode)
+
+        # Truncate if needed
+        if len(output) > 3500:
+            output = output[-3500:] + "\n...[truncated]"
+
+        status_icon = "✅" if returncode == 0 else "❌"
+        exit_info = "" if returncode == 0 else f" — exit {returncode}"
         try:
-            output, returncode = run_command_streaming(chat_id, shell_command, cmd_timeout, command_name)
+            bot.reply_to(
+                message,
+                f"{status_icon} `{prefix}{command_name}`{exit_info}\n```\n{output}\n```",
+                parse_mode="Markdown",
+            )
+        except Exception:
+            # Markdown failed (content has special chars) — send as plain text
+            bot.reply_to(message, f"{status_icon} /{prefix}{command_name}{exit_info}\n\n{output}")
+    except subprocess.TimeoutExpired:
+        bot.reply_to(message, f"⏰ Command timed out after {cmd_timeout}s.")
+        logger.error(f"Command timed out: {shell_command}")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error executing command: {e}")
+        logger.error(f"Error executing command {shell_command}: {e}")
 
-            # Record in command history
-            from botpkg.handlers.meta import record_command
-            record_command(command_name, chat_id, returncode)
-        except subprocess.TimeoutExpired:
-            bot.send_message(chat_id, f"⏰ Command timed out after {cmd_timeout}s.")
-            logger.error(f"Command timed out: {shell_command}")
-        except Exception as e:
-            bot.send_message(chat_id, f"Error executing command: {e}")
-            logger.error(f"Error executing command {shell_command}: {e}")
-
-    threading.Thread(target=execute, daemon=True).start()
     return True
 
 
@@ -164,7 +181,7 @@ def handle_macro(message, chat_id, text):
             step_desc = step.get("desc", f"Step {i}") if isinstance(step, dict) else f"Step {i}"
             step_timeout = step.get("timeout", 300) if isinstance(step, dict) else 300
 
-            bot.send_message(chat_id, f"⚙️ [{i}/{len(steps)}] {step_desc}...")
+            status_msg = bot.send_message(chat_id, f"⚙️ [{i}/{len(steps)}] {step_desc}...")
 
             try:
                 if step_cmd.startswith("/"):
@@ -208,18 +225,18 @@ def handle_macro(message, chat_id, text):
                 )
 
                 if result.returncode != 0 and not continue_on_error:
-                    bot.send_message(chat_id, f"🛑 Macro '{desc}' stopped at step {i} (non-zero exit).")
+                    bot.reply_to(message, f"🛑 Macro '{desc}' stopped at step {i} (non-zero exit).")
                     return
             except subprocess.TimeoutExpired:
-                bot.send_message(chat_id, f"⏰ [{i}] Step timed out after {step_timeout}s.")
+                bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text=f"⏰ [{i}] Step timed out after {step_timeout}s.")
                 if not continue_on_error:
-                    bot.send_message(chat_id, f"🛑 Macro '{desc}' stopped at step {i}.")
+                    bot.reply_to(message, f"🛑 Macro '{desc}' stopped at step {i}.")
                     return
             except Exception as e:
-                bot.send_message(chat_id, f"❌ [{i}] Error: {e}")
+                bot.edit_message_text(chat_id=chat_id, message_id=status_msg.message_id, text=f"❌ [{i}] Error: {e}")
                 if not continue_on_error:
                     return
 
-        bot.send_message(chat_id, f"✅ Macro '{desc}' completed ({len(steps)} steps).")
+        bot.reply_to(message, f"✅ Macro '{desc}' completed ({len(steps)} steps).")
 
     threading.Thread(target=run_macro, daemon=True).start()
