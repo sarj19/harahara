@@ -99,17 +99,20 @@ def handle_yaml_command(message, chat_id, text):
         if len(output) > 3500:
             output = output[-3500:] + "\n...[truncated]"
 
-        status_icon = "✅" if returncode == 0 else "❌"
-        exit_info = "" if returncode == 0 else f" — exit {returncode}"
-        try:
-            bot.reply_to(
-                message,
-                f"{status_icon} `{prefix}{command_name}`{exit_info}\n```\n{output}\n```",
-                parse_mode="Markdown",
-            )
-        except Exception:
-            # Markdown failed (content has special chars) — send as plain text
-            bot.reply_to(message, f"{status_icon} /{prefix}{command_name}{exit_info}\n\n{output}")
+        if returncode == 0:
+            try:
+                bot.reply_to(message, f"```\n{output}\n```", parse_mode="Markdown")
+            except Exception:
+                bot.reply_to(message, output)
+        else:
+            try:
+                bot.reply_to(
+                    message,
+                    f"❌ exit {returncode}\n```\n{output}\n```",
+                    parse_mode="Markdown",
+                )
+            except Exception:
+                bot.reply_to(message, f"❌ exit {returncode}\n\n{output}")
     except subprocess.TimeoutExpired:
         bot.reply_to(message, f"⏰ Command timed out after {cmd_timeout}s.")
         logger.error(f"Command timed out: {shell_command}")
