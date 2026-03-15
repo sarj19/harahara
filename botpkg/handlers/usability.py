@@ -835,3 +835,81 @@ def try_natural_shortcut(chat_id, text):
             return True
 
     return False
+
+
+# ═══════════════════════════════════════════════════════════════════
+# /setup — macOS permission walkthrough + tips
+# ═══════════════════════════════════════════════════════════════════
+
+_PERMISSIONS = [
+    ("📸", "Screen Recording", "/screenshot, /record",
+     "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture"),
+    ("⌨️", "Accessibility", "/key, /type",
+     "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"),
+    ("📷", "Camera", "/webcam",
+     "x-apple.systempreferences:com.apple.preference.security?Privacy_Camera"),
+    ("🎙", "Microphone", "/audio",
+     "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone"),
+    ("💾", "Full Disk Access", "/notifications",
+     "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"),
+]
+
+
+def handle_setup(message, chat_id, text):
+    """Interactive macOS permission walkthrough, one at a time."""
+    # Parse which step we're on (e.g. /setup or /setup 2)
+    args = text.split()
+    step = 0
+    if len(args) > 1 and args[1].isdigit():
+        step = int(args[1])
+
+    if step < len(_PERMISSIONS):
+        icon, name, cmds, url = _PERMISSIONS[step]
+        total = len(_PERMISSIONS)
+
+        # Open the exact settings pane on the Mac
+        try:
+            subprocess.run(["open", url], capture_output=True, timeout=5)
+        except Exception:
+            pass
+
+        markup = telebot.types.InlineKeyboardMarkup(row_width=2)
+        markup.add(
+            telebot.types.InlineKeyboardButton(
+                "✅ Done" if step < total - 1 else "✅ Finish",
+                callback_data=f"runcmd:/setup {step + 1}",
+            ),
+            telebot.types.InlineKeyboardButton(
+                "⏭ Skip", callback_data=f"runcmd:/setup {step + 1}",
+            ),
+        )
+
+        bot.send_message(
+            chat_id,
+            f"🔐 *Permission {step + 1}/{total}: {icon} {name}*\n\n"
+            f"Enables: `{cmds}`\n"
+            f"Grant to: *Terminal.app* (or your terminal emulator)\n\n"
+            f"_Settings pane opened on your Mac._",
+            parse_mode="Markdown",
+            reply_markup=markup,
+        )
+    else:
+        # All permissions done — show tips
+        bot.send_message(
+            chat_id,
+            f"{BOT_EMOJI} *Setup complete!* All permissions configured.\n\n"
+            "🔨 *Build custom commands, schedules & macros:*\n"
+            "  `/build` → interactive wizard\n"
+            "  `/build mycommand curl wttr.in` → quick one-liner\n\n"
+            "  Or edit YAML files directly:\n"
+            "  `personal/bot_commands.yaml` → commands (live-reloaded)\n"
+            "  `personal/schedules.yaml` → scheduled tasks\n"
+            "  `personal/macros.yaml` → multi-step sequences\n\n"
+            "📝 *Quick notes:*\n"
+            "  `/note save Remember to deploy`\n"
+            "  `/note list` · `/note search deploy` · `/note delete 1`\n\n"
+            "📅 *Google Calendar & Gmail:*\n"
+            "  Send `/googlesetup` to connect your Google account.\n\n"
+            "Send /help for the full command list.",
+            parse_mode="Markdown",
+        )

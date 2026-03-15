@@ -189,5 +189,96 @@ class TestFocus(unittest.TestCase):
         self.assertIn("ended", mock_bot.reply_to.call_args[0][1])
 
 
+class TestSetup(unittest.TestCase):
+    """Tests for the /setup permission walkthrough."""
+
+    @patch("botpkg.handlers.usability.subprocess")
+    @patch("botpkg.handlers.usability.bot")
+    def test_first_step(self, mock_bot, mock_subprocess):
+        from botpkg.handlers.usability import handle_setup
+        msg = MagicMock()
+        handle_setup(msg, 100, "/setup")
+        mock_bot.send_message.assert_called_once()
+        text = mock_bot.send_message.call_args[0][1]
+        self.assertIn("1/5", text)
+        self.assertIn("Screen Recording", text)
+        # Should open the settings pane
+        mock_subprocess.run.assert_called_once()
+        url = mock_subprocess.run.call_args[0][0][1]
+        self.assertIn("ScreenCapture", url)
+
+    @patch("botpkg.handlers.usability.subprocess")
+    @patch("botpkg.handlers.usability.bot")
+    def test_middle_step(self, mock_bot, mock_subprocess):
+        from botpkg.handlers.usability import handle_setup
+        msg = MagicMock()
+        handle_setup(msg, 100, "/setup 2")
+        text = mock_bot.send_message.call_args[0][1]
+        self.assertIn("3/5", text)
+        self.assertIn("Camera", text)
+        url = mock_subprocess.run.call_args[0][0][1]
+        self.assertIn("Camera", url)
+
+    @patch("botpkg.handlers.usability.subprocess")
+    @patch("botpkg.handlers.usability.bot")
+    def test_last_step_shows_finish_button(self, mock_bot, mock_subprocess):
+        from botpkg.handlers.usability import handle_setup
+        msg = MagicMock()
+        handle_setup(msg, 100, "/setup 4")
+        text = mock_bot.send_message.call_args[0][1]
+        self.assertIn("5/5", text)
+        self.assertIn("Full Disk Access", text)
+        # Check the button label is "Finish" not "Done"
+        markup = mock_bot.send_message.call_args[1]["reply_markup"]
+        button_texts = [btn.text for row in markup.keyboard for btn in row]
+        self.assertIn("✅ Finish", button_texts)
+
+    @patch("botpkg.handlers.usability.subprocess")
+    @patch("botpkg.handlers.usability.bot")
+    def test_done_button_has_next_step(self, mock_bot, mock_subprocess):
+        from botpkg.handlers.usability import handle_setup
+        msg = MagicMock()
+        handle_setup(msg, 100, "/setup 1")
+        markup = mock_bot.send_message.call_args[1]["reply_markup"]
+        callbacks = [btn.callback_data for row in markup.keyboard for btn in row]
+        self.assertIn("runcmd:/setup 2", callbacks)
+
+    @patch("botpkg.handlers.usability.bot")
+    def test_completion_shows_tips(self, mock_bot):
+        from botpkg.handlers.usability import handle_setup
+        msg = MagicMock()
+        handle_setup(msg, 100, "/setup 5")
+        text = mock_bot.send_message.call_args[0][1]
+        self.assertIn("Setup complete", text)
+        self.assertIn("/build", text)
+        self.assertIn("/note", text)
+        self.assertIn("/googlesetup", text)
+
+    @patch("botpkg.handlers.usability.bot")
+    def test_out_of_range_shows_completion(self, mock_bot):
+        from botpkg.handlers.usability import handle_setup
+        msg = MagicMock()
+        handle_setup(msg, 100, "/setup 99")
+        text = mock_bot.send_message.call_args[0][1]
+        self.assertIn("Setup complete", text)
+
+    @patch("botpkg.handlers.usability.subprocess")
+    @patch("botpkg.handlers.usability.bot")
+    def test_full_walkthrough(self, mock_bot, mock_subprocess):
+        """Simulate the full 5-step walkthrough to completion."""
+        from botpkg.handlers.usability import handle_setup, _PERMISSIONS
+        msg = MagicMock()
+        for i in range(len(_PERMISSIONS)):
+            mock_bot.reset_mock()
+            handle_setup(msg, 100, f"/setup {i}")
+            text = mock_bot.send_message.call_args[0][1]
+            self.assertIn(f"{i + 1}/{len(_PERMISSIONS)}", text)
+        # Final call should show completion
+        mock_bot.reset_mock()
+        handle_setup(msg, 100, f"/setup {len(_PERMISSIONS)}")
+        text = mock_bot.send_message.call_args[0][1]
+        self.assertIn("Setup complete", text)
+
+
 if __name__ == "__main__":
     unittest.main()

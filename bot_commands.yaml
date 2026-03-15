@@ -158,6 +158,8 @@ _special:
     desc: "Favorites bar: /fav add|remove|list|show"
   settings:
     desc: "Interactive settings wizard"
+  setup:
+    desc: "macOS permissions walkthrough & tips"
   shortcut:
     desc: "Run macOS Shortcut: /shortcut [name]"
     aliases: [shortcuts]

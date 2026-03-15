@@ -74,7 +74,7 @@ from botpkg.handlers.usability import (
     handle_pretty_status, handle_tour_callback,
     handle_menu_callback, suggest_command,
     try_natural_shortcut, update_streak,
-    handle_fav, handle_settings,
+    handle_fav, handle_settings, handle_setup,
 )
 from botpkg.handlers.commands import (
     handle_yaml_command, handle_macro, handle_macros,
@@ -138,6 +138,7 @@ DISPATCH_TABLE = {
     "ollamasetup":  handle_ollamasetup,
     "ai":           handle_ai,
     "exec":         handle_exec,
+    "setup":        handle_setup,
 }
 
 
@@ -315,10 +316,11 @@ def handle_all_messages(message):
     # ─── Duplicate throttling ───
     now = time.time()
     last = _last_command.get(chat_id)
-    if last and last[0] == resolved and (now - last[1]) < _THROTTLE_SECS:
+    throttle_key = text.strip().lower()  # full text, not just cmd name
+    if last and last[0] == throttle_key and (now - last[1]) < _THROTTLE_SECS:
         bot.reply_to(message, f"⏱ `/{resolved}` is already running.", parse_mode="Markdown")
         return
-    _last_command[chat_id] = (resolved, now)
+    _last_command[chat_id] = (throttle_key, now)
 
     # ─── Emoji reaction ───
     _react(chat_id, message.message_id)
