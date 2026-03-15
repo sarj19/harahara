@@ -4,6 +4,7 @@
 All logic lives in the botpkg/ package.
 This file is the launch target for the launchd plist.
 """
+import os
 import signal
 import sys
 import time
@@ -14,7 +15,7 @@ import telebot
 from botpkg import bot, logger, AUTHORIZED_USER_ID
 from botpkg.config import SPECIAL_COMMANDS
 from botpkg.utils import load_commands
-from settings import BOT_NAME, BOT_EMOJI, BOT_GREETING
+from settings import BOT_NAME, BOT_EMOJI, BOT_GREETING, PROJECT_DIR
 
 # Import handlers to register the @bot.message_handler decorator
 import botpkg.handlers  # noqa: F401
@@ -95,6 +96,18 @@ if __name__ == "__main__":
         logger.info(f"Registered {len(cmds)} command suggestions with Telegram.")
     except Exception as e:
         logger.warning(f"Failed to register commands: {e}")
+
+    # Set the bot's display name in Telegram — only on first run
+    _name_flag = os.path.join(PROJECT_DIR, "personal", ".bot_name_set")
+    if not os.path.exists(_name_flag):
+        try:
+            bot.set_my_name(f"{BOT_EMOJI} {BOT_NAME}")
+            os.makedirs(os.path.dirname(_name_flag), exist_ok=True)
+            with open(_name_flag, "w") as f:
+                f.write(f"{BOT_EMOJI} {BOT_NAME}\n")
+            logger.info(f"Set bot display name to '{BOT_EMOJI} {BOT_NAME}'.")
+        except Exception as e:
+            logger.warning(f"Failed to set bot name: {e}")
 
     try:
         bot.send_message(AUTHORIZED_USER_ID, f"{BOT_EMOJI} {greeting}")
