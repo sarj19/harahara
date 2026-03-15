@@ -177,8 +177,10 @@ class TestQuietHours(unittest.TestCase):
 
     @patch("botpkg.heartbeat.BOT_QUIET_START", "00:00")
     @patch("botpkg.heartbeat.BOT_QUIET_END", "23:59")
-    def test_always_quiet(self):
+    @patch("botpkg.heartbeat.datetime")
+    def test_always_quiet(self, mock_dt):
         from botpkg.heartbeat import _is_quiet_hours
+        mock_dt.now.return_value.strftime.return_value = "12:00"
         self.assertTrue(_is_quiet_hours())
 
     @patch("botpkg.heartbeat.BOT_QUIET_START", "25:00")
