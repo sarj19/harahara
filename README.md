@@ -91,8 +91,9 @@ The interactive setup script will:
 3. Prompt for your bot token & user ID → saves to `.env`
 4. Set up personal commands file with a sample `/cal` command
 5. Detect optional tools (imagesnap for webcam, Gemini CLI, Ollama)
-6. Guide you through required macOS permissions
-7. Optionally install a launchd auto-start service
+6. Optionally install a launchd auto-start service
+
+Then send `/setup` in Telegram to grant macOS permissions one at a time.
 
 ### Manual Setup
 
@@ -177,6 +178,7 @@ See [`.env.example`](.env.example) for the full list with all optional path over
 | `/schedule` (`/sched`) | Manage schedules: `/schedule add <name> <interval> <cmd>` |
 | `/ai <question>` (`/ask`, `/llm`) | Direct AI query (uses auto-detected backend) |
 | `/ollamasetup` | Set up local AI with Ollama |
+| `/setup` | macOS permissions walkthrough & tips |
 
 ### YAML Commands
 
@@ -285,6 +287,8 @@ Setup: Run `/googlesetup` for full Google API access, or add your Google account
 
 ## macOS Permissions
 
+Run `/setup` in Telegram to grant permissions one at a time — it opens the exact settings pane for each.
+
 | Permission | Required For | Grant To |
 | ---------- | ------------ | -------- |
 | Screen Recording | `/screenshot`, `/record` | Terminal.app / your terminal |
@@ -303,7 +307,7 @@ launchctl load ~/Library/LaunchAgents/com.harahara.bot.plist
 
 ## Testing
 
-256+ tests covering all handlers, NLP brain, Ollama integration, build wizard, usability, and personalization.
+258 tests covering all handlers, NLP brain, Ollama integration, build wizard, usability, and personalization.
 
 → See [tests/README.md](tests/README.md) for running tests, per-file coverage, and writing new tests.
 

@@ -62,7 +62,7 @@ header "Step 2: Telegram Bot Setup"
 
 if [ -f "$SCRIPT_DIR/.env" ]; then
     warn ".env file already exists."
-    read -p "Overwrite with new values? (y/N): " OVERWRITE_ENV
+    read -rp "Overwrite with new values? (y/N): " OVERWRITE_ENV
     if [[ ! "$OVERWRITE_ENV" =~ ^[Yy]$ ]]; then
         info "Keeping existing .env"
         source "$SCRIPT_DIR/.env" 2>/dev/null || true
@@ -78,10 +78,10 @@ if [ ! -f "$SCRIPT_DIR/.env" ] || [[ "$OVERWRITE_ENV" =~ ^[Yy]$ ]]; then
     echo "   2. Send /newbot and follow the prompts"
     echo "   3. Copy the token (format: 123456:ABC-DEF...)"
     echo ""
-    read -p "Enter your bot token: " BOT_TOKEN
+    read -rp "Enter your bot token: " BOT_TOKEN
     while [[ -z "$BOT_TOKEN" ]] || [[ ! "$BOT_TOKEN" == *":"* ]]; do
         error "Token must contain a colon (e.g. 123456:ABC-DEF...)"
-        read -p "Enter your bot token: " BOT_TOKEN
+        read -rp "Enter your bot token: " BOT_TOKEN
     done
 
     echo ""
@@ -89,10 +89,10 @@ if [ ! -f "$SCRIPT_DIR/.env" ] || [[ "$OVERWRITE_ENV" =~ ^[Yy]$ ]]; then
     echo "   1. Open Telegram and search for @userinfobot"
     echo "   2. Send /start — it replies with your numeric ID"
     echo ""
-    read -p "Enter your Telegram user ID: " USER_ID
+    read -rp "Enter your Telegram user ID: " USER_ID
     while [[ -z "$USER_ID" ]] || ! [[ "$USER_ID" =~ ^[0-9]+$ ]]; do
         error "User ID must be a number"
-        read -p "Enter your Telegram user ID: " USER_ID
+        read -rp "Enter your Telegram user ID: " USER_ID
     done
 
     echo ""
@@ -101,38 +101,71 @@ if [ ! -f "$SCRIPT_DIR/.env" ] || [[ "$OVERWRITE_ENV" =~ ^[Yy]$ ]]; then
     echo "   to let you know it is still running and connected."
     echo "   (Set to 0 to disable message notifications.)"
     echo ""
-    read -p "Heartbeat interval in hours [1]: " HEARTBEAT_INTERVAL
+    read -rp "Heartbeat interval in hours [1]: " HEARTBEAT_INTERVAL
     HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL:-1}
     while ! [[ "$HEARTBEAT_INTERVAL" =~ ^[0-9]+$ ]]; do
         error "Heartbeat interval must be a number (0 to disable)"
-        read -p "Heartbeat interval in hours [1]: " HEARTBEAT_INTERVAL
+        read -rp "Heartbeat interval in hours [1]: " HEARTBEAT_INTERVAL
         HEARTBEAT_INTERVAL=${HEARTBEAT_INTERVAL:-1}
     done
 
     echo ""
     echo -e "${BOLD}Natural Language Processing (NLP):${NC}"
     echo "   When enabled, plain text messages (without a / prefix) are"
-    echo "   forwarded to the Gemini CLI for AI-powered responses."
-    echo "   Commands starting with / are always handled directly — no AI tokens burned."
-    echo "   (Requires Gemini CLI to be installed.)"
+    echo "   routed through an AI backend for intelligent responses."
+    echo "   Commands starting with / are always handled directly."
     echo ""
-    read -p "Enable NLP mode? (y/N): " ENABLE_NLP
-    if [[ "$ENABLE_NLP" =~ ^[Yy]$ ]]; then
-        NLP_ENABLED="true"
+    echo "   Choose your AI backend:"
+    echo "     1) 🦙 Ollama  — local, free, private, offline"
+    echo "     2) ✨ Gemini  — cloud AI via Gemini CLI"
+    echo "     3) ❌ Disable — no NLP, commands only"
+    echo ""
+    read -rp "Choose [1/2/3, default: 3]: " NLP_CHOICE
+    NLP_CHOICE=${NLP_CHOICE:-3}
+    while [[ ! "$NLP_CHOICE" =~ ^[123]$ ]]; do
+        error "Please enter 1, 2, or 3"
+        read -rp "Choose [1/2/3, default: 3]: " NLP_CHOICE
+        NLP_CHOICE=${NLP_CHOICE:-3}
+    done
 
+    if [[ "$NLP_CHOICE" == "1" ]]; then
+        NLP_ENABLED="true"
+        AI_BACKEND="ollama"
+        if command -v ollama &>/dev/null; then
+            success "Ollama found!"
+        else
+            warn "Ollama not installed yet."
+            echo "  Install: brew install ollama && ollama serve && ollama pull llama3.2:1b"
+        fi
+        echo ""
+        read -rp "Ollama model [llama3.2:1b]: " OLLAMA_MODEL
+        OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:1b}
+    elif [[ "$NLP_CHOICE" == "2" ]]; then
+        NLP_ENABLED="true"
+        AI_BACKEND="gemini"
+        if command -v gemini &>/dev/null; then
+            success "Gemini CLI found!"
+        else
+            warn "Gemini CLI not installed yet."
+            echo "  Install: npm install -g @google/generative-ai-cli"
+        fi
+        OLLAMA_MODEL=""
+    else
+        NLP_ENABLED="false"
+        AI_BACKEND=""
+        OLLAMA_MODEL=""
+    fi
+
+    PERSIST_CONVERSATIONS="false"
+    if [[ "$NLP_ENABLED" == "true" ]]; then
         echo ""
         echo -e "  ${BOLD}Persist conversations?${NC}"
         echo "   If enabled, NLP conversation history survives bot restarts."
         echo "   If disabled (default), conversations reset on each restart."
-        read -p "Persist NLP conversations across restarts? (y/N): " PERSIST_CONV
+        read -rp "Persist NLP conversations across restarts? (y/N): " PERSIST_CONV
         if [[ "$PERSIST_CONV" =~ ^[Yy]$ ]]; then
             PERSIST_CONVERSATIONS="true"
-        else
-            PERSIST_CONVERSATIONS="false"
         fi
-    else
-        NLP_ENABLED="false"
-        PERSIST_CONVERSATIONS="false"
     fi
 
     echo ""
@@ -140,9 +173,9 @@ if [ ! -f "$SCRIPT_DIR/.env" ] || [[ "$OVERWRITE_ENV" =~ ^[Yy]$ ]]; then
     echo "   Give your bot a name and emoji. These appear in heartbeats,"
     echo "   startup messages, /help, and /status."
     echo ""
-    read -p "Bot name [harahara]: " CUSTOM_NAME
+    read -rp "Bot name [harahara]: " CUSTOM_NAME
     CUSTOM_NAME=${CUSTOM_NAME:-harahara}
-    read -p "Bot emoji [🐟]: " CUSTOM_EMOJI
+    read -rp "Bot emoji [🐟]: " CUSTOM_EMOJI
     CUSTOM_EMOJI=${CUSTOM_EMOJI:-🐟}
     cat > "$SCRIPT_DIR/.env" << EOF
 # Auto-generated by setup.sh — $(date)
@@ -151,6 +184,8 @@ TELEGRAM_AUTHORIZED_USER_ID=$USER_ID
 BOT_HEARTBEAT_INTERVAL=$HEARTBEAT_INTERVAL
 BOT_NLP_ENABLED=$NLP_ENABLED
 BOT_PERSIST_CONVERSATIONS=$PERSIST_CONVERSATIONS
+BOT_AI_BACKEND=$AI_BACKEND
+BOT_OLLAMA_MODEL=$OLLAMA_MODEL
 BOT_NAME=$CUSTOM_NAME
 BOT_EMOJI=$CUSTOM_EMOJI
 EOF
@@ -180,7 +215,7 @@ if [ ! -f "$SCRIPT_DIR/personal/bot_commands.yaml" ]; then
     echo ""
     echo -e "${BOLD}Would you like to add a sample command?${NC}"
     echo "  This creates a /cal command that shows the calendar."
-    read -p "Add /cal command? (Y/n): " ADD_CAL
+    read -rp "Add /cal command? (Y/n): " ADD_CAL
     if [[ ! "$ADD_CAL" =~ ^[Nn]$ ]]; then
         cat >> "$SCRIPT_DIR/personal/bot_commands.yaml" << 'EOF'
 
@@ -209,7 +244,7 @@ if command -v imagesnap &>/dev/null; then
     success "imagesnap found (enables /webcam)"
 else
     warn "imagesnap not found. /webcam will not work."
-    read -p "Install imagesnap via Homebrew? (Y/n): " INSTALL_IMAGESNAP
+    read -rp "Install imagesnap via Homebrew? (Y/n): " INSTALL_IMAGESNAP
     if [[ ! "$INSTALL_IMAGESNAP" =~ ^[Nn]$ ]]; then
         if command -v brew &>/dev/null; then
             brew install imagesnap
@@ -238,7 +273,7 @@ elif command -v ffmpeg &>/dev/null; then
     success "ffmpeg found (enables /audio recording)"
 else
     warn "Neither sox nor ffmpeg found. /audio will not work."
-    read -p "Install sox via Homebrew? (Y/n): " INSTALL_SOX
+    read -rp "Install sox via Homebrew? (Y/n): " INSTALL_SOX
     if [[ ! "$INSTALL_SOX" =~ ^[Nn]$ ]]; then
         if command -v brew &>/dev/null; then
             brew install sox
@@ -250,96 +285,22 @@ else
 fi
 
 # ──────────────────────────────────────────────────────────
-header "Step 5: Google Calendar & Gmail (Optional)"
-# ──────────────────────────────────────────────────────────
-
-echo "  Connect Google Calendar and Gmail for /calendar and /mail commands."
-echo "  This requires a Google Cloud project with Calendar + Gmail APIs enabled."
-echo ""
-read -p "Set up Google integration? (y/N): " SETUP_GOOGLE
-if [[ "$SETUP_GOOGLE" =~ ^[Yy]$ ]]; then
-    info "Installing Google API packages..."
-    pip3 install --quiet google-api-python-client google-auth-httplib2 google-auth-oauthlib 2>/dev/null || \
-        pip3 install google-api-python-client google-auth-httplib2 google-auth-oauthlib
-    success "Google API packages installed"
-    echo ""
-    echo "  📋 Steps to get Google credentials:"
-    echo "     1. Go to https://console.cloud.google.com"
-    echo "     2. Create a project (or select one)"
-    echo "     3. Enable 'Google Calendar API' and 'Gmail API'"
-    echo "        (APIs & Services → Library → search and enable both)"
-    echo "     4. Create OAuth2 credentials:"
-    echo "        APIs & Services → Credentials → Create → OAuth Client ID → Desktop App"
-    echo "     5. Download the JSON and save it as:"
-    echo "        personal/google_credentials.json"
-    echo ""
-    read -p "Press Enter when google_credentials.json is saved (or 's' to skip)... " GOOGLE_SKIP
-    if [[ "$GOOGLE_SKIP" != "s" && -f "$SCRIPT_DIR/personal/google_credentials.json" ]]; then
-        info "Running Google auth flow (a browser will open)..."
-        cd "$SCRIPT_DIR" && python3 -c "from botpkg.google_auth import run_auth_flow; run_auth_flow()"
-        if [ $? -eq 0 ]; then
-            success "Google authentication complete!"
-        else
-            warn "Auth flow failed. You can try later with /googlesetup"
-        fi
-    elif [[ "$GOOGLE_SKIP" == "s" ]]; then
-        info "Skipped. You can set up Google later with /googlesetup"
-    else
-        warn "Credentials file not found at personal/google_credentials.json"
-        warn "You can set this up later with /googlesetup"
-    fi
-else
-    info "Skipped. You can set up Google later with /googlesetup"
-fi
-
-# ──────────────────────────────────────────────────────────
-header "Step 6: macOS Permissions"
-# ──────────────────────────────────────────────────────────
-
-echo -e "${BOLD}The bot needs specific macOS permissions to work fully.${NC}"
-echo "You'll need to grant these in System Settings > Privacy & Security."
-echo ""
-echo "  📸 ${BOLD}Screen Recording${NC} — required for /screenshot, /record"
-echo "     Grant to: Terminal.app (or your terminal emulator)"
-echo ""
-echo "  ⌨️  ${BOLD}Accessibility${NC} — required for /key, /type"
-echo "     Grant to: Terminal.app (or your terminal emulator)"
-echo ""
-echo "  📷 ${BOLD}Camera${NC} — required for /webcam"
-echo "     Grant to: imagesnap (if installed)"
-echo ""
-echo "  🎙 ${BOLD}Microphone${NC} — required for /audio"
-echo "     Grant to: Terminal.app (or your terminal emulator)"
-echo ""
-echo "  💾 ${BOLD}Full Disk Access${NC} — required for /notifications"
-echo "     Grant to: Terminal.app (or your terminal emulator)"
-echo ""
-
-read -p "Open System Settings > Privacy & Security now? (Y/n): " OPEN_SETTINGS
-if [[ ! "$OPEN_SETTINGS" =~ ^[Nn]$ ]]; then
-    open "x-apple.systempreferences:com.apple.preference.security?Privacy"
-    info "Opened Privacy & Security settings."
-    echo "  Please grant the permissions listed above, then come back."
-    read -p "Press Enter when done..."
-fi
-
-# ──────────────────────────────────────────────────────────
-header "Step 6: Auto-Start (launchd)"
+header "Step 5: Auto-Start (launchd)"
 # ──────────────────────────────────────────────────────────
 
 PLIST_NAME="com.harahara.bot"
 PLIST_DEST="$HOME/Library/LaunchAgents/$PLIST_NAME.plist"
 
 echo -e "${BOLD}Set up the bot to start automatically on login?${NC}"
-read -p "Install launchd service? (Y/n): " INSTALL_LAUNCHD
+read -rp "Install launchd service? (Y/n): " INSTALL_LAUNCHD
 if [[ ! "$INSTALL_LAUNCHD" =~ ^[Nn]$ ]]; then
-    read -p "Service name [$PLIST_NAME]: " CUSTOM_SERVICE
+    read -rp "Service name [$PLIST_NAME]: " CUSTOM_SERVICE
     PLIST_NAME="${CUSTOM_SERVICE:-$PLIST_NAME}"
     PLIST_DEST="$HOME/Library/LaunchAgents/$PLIST_NAME.plist"
 
     if [ -f "$PLIST_DEST" ]; then
         warn "Plist already exists at $PLIST_DEST"
-        read -p "Overwrite? (y/N): " OVERWRITE_PLIST
+        read -rp "Overwrite? (y/N): " OVERWRITE_PLIST
         if [[ ! "$OVERWRITE_PLIST" =~ ^[Yy]$ ]]; then
             info "Keeping existing plist."
             INSTALL_LAUNCHD="n"
@@ -365,20 +326,11 @@ if [[ ! "$INSTALL_LAUNCHD" =~ ^[Nn]$ ]]; then
     fi
 else
     echo ""
-    info "You can run the bot manually anytime:"
+    info "Starting the bot..."
     echo "    cd $SCRIPT_DIR && python3 telegram_listener.py"
-fi
-
-# ──────────────────────────────────────────────────────────
-header "Step 7: Verify"
-# ──────────────────────────────────────────────────────────
-
-echo "Running import check..."
-if cd "$SCRIPT_DIR" && python3 -c "from botpkg import bot; import botpkg.handlers; print('OK')" 2>/dev/null; then
-    success "All imports verified."
-else
-    error "Import check failed. Check the error above."
-    exit 1
+    echo ""
+    info "To start it again later:"
+    echo "    cd $SCRIPT_DIR && python3 telegram_listener.py"
 fi
 
 echo ""
@@ -394,23 +346,7 @@ if [[ ! "$INSTALL_LAUNCHD" =~ ^[Nn]$ ]]; then
     echo "   ✅ Auto-start service installed"
 fi
 echo ""
-echo -e "${BOLD}🚀 Quick start:${NC}"
-echo "   Open Telegram, send /help to your bot!"
-echo ""
-echo -e "${BOLD}🔨 Build custom commands, schedules & macros:${NC}"
-echo "   /build                → interactive wizard (choose command, schedule, or macro)"
-echo "   /build mycommand curl wttr.in  → quick one-liner command creation"
-echo ""
-echo "   Or edit YAML files directly:"
-echo "     personal/bot_commands.yaml → custom commands (live-reloaded)"
-echo "     personal/schedules.yaml    → scheduled/cron-like tasks"
-echo "     personal/macros.yaml       → multi-step command sequences"
-echo ""
-echo -e "${BOLD}📝 Quick notes:${NC}"
-echo "   /note save Remember to deploy"
-echo "   /note list   —   /note search deploy   —   /note delete 1"
-echo ""
-echo -e "${BOLD}🧪 Run tests:${NC}"
-echo "   TELEGRAM_BOT_TOKEN='123456:FAKE' TELEGRAM_AUTHORIZED_USER_ID='12345' \\"
-echo "     python3 -m unittest discover -s tests -v"
+echo -e "${BOLD}🚀 Next step:${NC}"
+echo "   Send /setup in Telegram to grant macOS permissions."
+echo "   You can always send /help for a full list of commands."
 echo ""
