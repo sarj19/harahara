@@ -289,7 +289,7 @@ def _parse_commands(ai_response):
 # Inline Button Helpers
 # ═══════════════════════════════════════════════════════════════════
 
-def _suggest_single_command(chat_id, command, context=""):
+def _suggest_single_command(chat_id, command, context="", edit_message_id=None):
     """Suggest a single command with Run/Cancel buttons."""
     markup = telebot.types.InlineKeyboardMarkup()
     # Truncate callback_data to 64 bytes (Telegram limit)
@@ -301,10 +301,13 @@ def _suggest_single_command(chat_id, command, context=""):
     msg = f"🧠 I think you want:\n`{command}`"
     if context:
         msg += f"\n_{context}_"
-    bot.send_message(chat_id, msg, parse_mode="Markdown", reply_markup=markup)
+    if edit_message_id:
+        bot.edit_message_text(msg, chat_id=chat_id, message_id=edit_message_id, parse_mode="Markdown", reply_markup=markup)
+    else:
+        bot.send_message(chat_id, msg, parse_mode="Markdown", reply_markup=markup)
 
 
-def _suggest_multiple_commands(chat_id, commands, context=""):
+def _suggest_multiple_commands(chat_id, commands, context="", edit_message_id=None):
     """Suggest multiple commands as a clickable list."""
     markup = telebot.types.InlineKeyboardMarkup()
     for cmd in commands[:5]:  # Max 5 suggestions
@@ -318,10 +321,13 @@ def _suggest_multiple_commands(chat_id, commands, context=""):
     msg = "🧠 Did you mean one of these?"
     if context:
         msg += f"\n_{context}_"
-    bot.send_message(chat_id, msg, parse_mode="Markdown", reply_markup=markup)
+    if edit_message_id:
+        bot.edit_message_text(msg, chat_id=chat_id, message_id=edit_message_id, parse_mode="Markdown", reply_markup=markup)
+    else:
+        bot.send_message(chat_id, msg, parse_mode="Markdown", reply_markup=markup)
 
 
-def _suggest_plan(chat_id, commands):
+def _suggest_plan(chat_id, commands, edit_message_id=None):
     """Suggest a multi-step plan with Run All button."""
     plan_id = str(uuid.uuid4())[:8]
     _pending_plans[plan_id] = {
@@ -336,11 +342,11 @@ def _suggest_plan(chat_id, commands):
         telebot.types.InlineKeyboardButton("▶ Run All", callback_data=f"brain_plan:{plan_id}"),
         telebot.types.InlineKeyboardButton("❌ Cancel", callback_data="brain_cancel:"),
     )
-    bot.send_message(
-        chat_id,
-        f"🧠 *Plan ({len(commands)} steps):*\n\n{steps}",
-        parse_mode="Markdown", reply_markup=markup,
-    )
+    plan_msg = f"🧠 *Plan ({len(commands)} steps):*\n\n{steps}"
+    if edit_message_id:
+        bot.edit_message_text(plan_msg, chat_id=chat_id, message_id=edit_message_id, parse_mode="Markdown", reply_markup=markup)
+    else:
+        bot.send_message(chat_id, plan_msg, parse_mode="Markdown", reply_markup=markup)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -358,14 +364,14 @@ def execute_plan(chat_id, plan_id):
         return
 
     commands = plan["commands"]
-    bot.send_message(chat_id, f"🚀 Executing plan ({len(commands)} steps)...")
+    status_msg = bot.send_message(chat_id, f"🚀 Executing plan ({len(commands)} steps)...")
 
     def _run():
         for i, cmd_text in enumerate(commands, 1):
             bot.send_message(chat_id, f"⚙️ [{i}/{len(commands)}] `{cmd_text}`...", parse_mode="Markdown")
             _execute_single_command(chat_id, cmd_text)
             time.sleep(0.5)  # Small delay between steps
-        bot.send_message(chat_id, f"✅ Plan completed ({len(commands)} steps).")
+        bot.edit_message_text(f"✅ Plan completed ({len(commands)} steps).", chat_id=chat_id, message_id=status_msg.message_id)
 
     threading.Thread(target=_run, daemon=True).start()
 
@@ -491,30 +497,18 @@ def process_message(message, chat_id, text):
                 return
 
     # ── Stage 2: Gemini with system prompt ──
-    bot.send_message(chat_id, "🧠 Thinking...")
+    status_msg = bot.send_message(chat_id, "🧠 Thinking...")
     logger.info(f"NLP → Gemini: '{text}'")
 
     def _process_with_ai():
         result = _call_ai(text, chat_id)
         if result is None:
-            bot.send_message(
-                chat_id,
-                "❌ No AI backend available.\n\n"
-                "• Gemini: `npm install -g @google/generative-ai-cli`\n"
-                "• Ollama: `/ollamasetup`",
-                parse_mode="Markdown",
-            )
+            bot.edit_message_text("❌ No AI backend available.\n\n" "• Gemini: `npm install -g @google/generative-ai-cli`\n" "• Ollama: `/ollamasetup`", chat_id=chat_id, message_id=status_msg.message_id, parse_mode="Markdown")
             return
 
         response, backend = result
         if response is None:
-            bot.send_message(
-                chat_id,
-                "❌ No AI backend available.\n\n"
-                "• Gemini: `npm install -g @google/generative-ai-cli`\n"
-                "• Ollama: `/ollamasetup`",
-                parse_mode="Markdown",
-            )
+            bot.edit_message_text("❌ No AI backend available.\n\n" "• Gemini: `npm install -g @google/generative-ai-cli`\n" "• Ollama: `/ollamasetup`", chat_id=chat_id, message_id=status_msg.message_id, parse_mode="Markdown")
             return
 
         # Parse for commands
@@ -526,15 +520,15 @@ def process_message(message, chat_id, text):
 
             if len(commands) == 1:
                 # ── Single command → suggest with button ──
-                _suggest_single_command(chat_id, commands[0])
+                _suggest_single_command(chat_id, commands[0], edit_message_id=status_msg.message_id)
             else:
                 # ── Stage 3: Multi-step plan ──
-                _suggest_plan(chat_id, commands)
+                _suggest_plan(chat_id, commands, edit_message_id=status_msg.message_id)
         else:
             # Pure conversational response
             add_to_history(chat_id, "assistant", response[:500])
             if len(response) > 4000:
                 response = response[:4000] + "\n...[truncated]"
-            bot.send_message(chat_id, response)
+            bot.edit_message_text(response, chat_id=chat_id, message_id=status_msg.message_id)
 
     threading.Thread(target=_process_with_ai, daemon=True).start()

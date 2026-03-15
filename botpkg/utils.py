@@ -169,27 +169,34 @@ def get_cmd_section(name):
     return _cmd_to_section.get(name.lower(), "")
 
 
-def send_file_smart(chat_id, file_path, caption=None):
+def send_file_smart(chat_id, file_path, caption=None, delete_message_id=None, reply_to_message_id=None):
     """Send as photo if < 10MB, else as document."""
     try:
+        if delete_message_id: 
+            try: bot.delete_message(chat_id, delete_message_id) 
+            except: pass
         if not os.path.exists(file_path):
             return False
         file_size = os.path.getsize(file_path)
         if file_size < 10 * 1024 * 1024:
             with open(file_path, "rb") as f:
-                bot.send_photo(chat_id, f, caption=caption)
+                bot.send_photo(chat_id, f, caption=caption, reply_to_message_id=reply_to_message_id)
         else:
             with open(file_path, "rb") as f:
-                bot.send_document(chat_id, f, caption=caption)
+                bot.send_document(chat_id, f, caption=caption, reply_to_message_id=reply_to_message_id)
         return True
     except Exception as e:
         logger.error(f"Error sending file {file_path}: {e}")
         return False
 
 
-def take_and_send_screenshot(chat_id):
+def take_and_send_screenshot(chat_id, delete_message_id=None, reply_to_message_id=None):
     """Wake display, capture a screenshot, and send it."""
-    from botpkg.config import activity_stats
+
+    if delete_message_id:
+        try: bot.delete_message(chat_id, delete_message_id)
+        except: pass
+
     screenshot_path = "/tmp/harahara_bot_screenshot.jpg"
     try:
         subprocess.run(["caffeinate", "-u", "-t", "2"], capture_output=True)
@@ -200,7 +207,7 @@ def take_and_send_screenshot(chat_id):
             check=True, capture_output=True, text=True,
         )
         if os.path.exists(screenshot_path):
-            success = send_file_smart(chat_id, screenshot_path)
+            success = send_file_smart(chat_id, screenshot_path, reply_to_message_id=reply_to_message_id)
             os.remove(screenshot_path)
             if success:
                 activity_stats["screenshots_taken"] += 1

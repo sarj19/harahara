@@ -199,7 +199,7 @@ def handle_shortcut(message, chat_id, text):
         except FileNotFoundError:
             bot.send_message(chat_id, "❌ `shortcuts` CLI not found. Requires macOS 12+.", parse_mode="Markdown")
         except Exception as e:
-            bot.send_message(chat_id, f"❌ Shortcuts error: {e}")
+            bot.reply_to(message, f"❌ Shortcuts error: {e}")
             logger.error(f"Shortcuts list error: {e}")
         return
 
