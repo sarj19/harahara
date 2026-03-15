@@ -160,8 +160,14 @@ def _command_wizard(message, chat_id, text, session):
         _send(
             chat_id,
             f"✅ Name: `/{_esc(name)}`\n\n"
-            "Step 2/5: Shell command to run?\n"
-            "💡 Use `{}` for user arguments.",
+            "Step 2/5: Shell command to run?\n\n"
+            "*Without arguments:*\n"
+            "  `uptime`\n"
+            "  → `/mycommand` runs `uptime`\n\n"
+            "*With arguments:*\n"
+            "  `~/scripts/deploy.sh {}`\n"
+            "  → `/mycommand staging` runs `~/scripts/deploy.sh staging`\n\n"
+            "💡 _Use `{}` where user arguments should go._",
         )
 
     elif step == 1:  # Command
