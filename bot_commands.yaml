@@ -212,7 +212,7 @@ wake:
   desc: Wake the display
 
 stayawake:
-  cmd: "caffeinate -di & echo $! > /tmp/harahara_bot_caffeinate.pid && echo \"Computer will stay awake (PID: $(cat /tmp/harahara_bot_caffeinate.pid)). Use /stopawake to stop.\""
+  cmd: "caffeinate -di & PID=$!; echo $PID > /tmp/harahara_bot_caffeinate.pid; echo \"☕ Computer will stay awake (PID: $PID). Use /stopawake to stop.\""
   desc: Keep the Mac awake indefinitely
 
 stopawake:
