@@ -37,7 +37,7 @@ from botpkg.handlers.system import (
     handle_screenshot, handle_webcam, handle_type, handle_url,
     handle_logs, handle_kill, handle_key,
     handle_open, handle_quit, handle_restartbot,
-    handle_diff, handle_where,
+    handle_diff, handle_where, handle_exec,
 )
 from botpkg.handlers.files import (
     handle_download, handle_upload, handle_file_receive,
@@ -137,6 +137,7 @@ DISPATCH_TABLE = {
     "schedule":     handle_schedule,
     "ollamasetup":  handle_ollamasetup,
     "ai":           handle_ai,
+    "exec":         handle_exec,
 }
 
 

@@ -177,6 +177,9 @@ _special:
     followups:
       - { label: "🤖 Setup", cmd: "/ollamasetup" }
       - { label: "🧠 Brain", cmd: "/brain status" }
+  exec:
+    desc: "Run shell command: /exec <command>"
+    aliases: [run, sh, shell]
 
 
 # ─── System Control ───
@@ -225,6 +228,19 @@ shutdown:
 procs:
   cmd: "bash -c 'N=${1:-10}; ps aux -r | head -$((N+1))' --"
   desc: "Top processes by CPU: /procs [count] (default 10)"
+
+apps:
+  cmd: "osascript -e 'tell application \"System Events\" to get name of every process whose background only is false' | tr ',' '\\n' | sed 's/^ //'"
+  desc: "List running GUI applications"
+  aliases: [app, running]
+  followups:
+    - { label: "💀 Kill", cmd: "/kill " }
+    - { label: "❌ Quit", cmd: "/quit " }
+
+frontapp:
+  cmd: "osascript -e 'tell application \"System Events\" to get name of first process whose frontmost is true'"
+  desc: "Show the frontmost application"
+  aliases: [front, activeapp]
 
 # ─── Clipboard ───
 clipboard:

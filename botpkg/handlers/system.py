@@ -501,3 +501,41 @@ def handle_where(message, chat_id, text):
 
     bot.edit_message_text("\n".join(info_lines), chat_id=chat_id, message_id=status_msg.message_id, parse_mode="Markdown", disable_web_page_preview=True)
 
+
+# ═══════════════════════════════════════════════════════════════════
+# Exec — run arbitrary shell commands
+# ═══════════════════════════════════════════════════════════════════
+
+def handle_exec(message, chat_id, text):
+    """Handle /exec <shell command> — run arbitrary shell commands."""
+    args = text.split(" ", 1)[1].strip() if " " in text else ""
+    if not args:
+        bot.reply_to(message, "Usage: `/exec <shell command>`\nExample: `/exec ls -la ~/Desktop`", parse_mode="Markdown")
+        return
+
+    try:
+        result = subprocess.run(
+            args, shell=True,
+            capture_output=True, text=True, timeout=300,
+        )
+        output = (result.stdout + result.stderr).strip() or "(No output)"
+
+        if len(output) > 3500:
+            output = output[-3500:] + "\n...[truncated]"
+
+        if result.returncode == 0:
+            try:
+                bot.reply_to(message, f"```\n{output}\n```", parse_mode="Markdown")
+            except Exception:
+                bot.reply_to(message, output)
+        else:
+            try:
+                bot.reply_to(message, f"❌ exit {result.returncode}\n```\n{output}\n```", parse_mode="Markdown")
+            except Exception:
+                bot.reply_to(message, f"❌ exit {result.returncode}\n\n{output}")
+    except subprocess.TimeoutExpired:
+        bot.reply_to(message, "⏰ Command timed out after 300s.")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error: {e}")
+        logger.error(f"Exec error: {e}")
+
