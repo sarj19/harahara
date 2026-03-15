@@ -179,7 +179,7 @@ _special:
       - { label: "🧠 Brain", cmd: "/brain status" }
   exec:
     desc: "Run shell command: /exec <command>"
-    aliases: [run, sh, shell]
+    aliases: [run, sh, shell, bash, zsh]
 
 
 # ─── System Control ───
